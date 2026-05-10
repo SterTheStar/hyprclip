@@ -10,7 +10,9 @@
 [![GTK4](https://img.shields.io/badge/GTK4-libadwaita-blueviolet.svg)](https://gtk.org/)
 [![Hyprland](https://img.shields.io/badge/Hyprland-Wayland-blue.svg)](https://hyprland.org/)
 
-A fast, minimal clipboard history popup for **Hyprland** using GTK4, libadwaita, and the wlr-layer-shell protocol.
+A fast, minimal clipboard history popup for **Hyprland** using GTK4, libadwaita, and the wlr-layer-shell protocol.\
+
+</div>
 
 ---
 
@@ -94,13 +96,13 @@ bind = SUPER, V, exec, hyprclip --gui
 - **gtk4-layer-shell** for Wayland layer-shell protocol
 - **wlr-layer-shell** for always-on-top popup
 
+<div align="center">
+  
 ## License
 
 This project is licensed under the **GNU General Public License v3.0** - see the [LICENSE](LICENSE) file for details.
 
 ---
-
-<div align="center">
 
 **[Report Bug](https://github.com/SterTheStar/hyprclip/issues)** · **[Request Feature](https://github.com/SterTheStar/hyprclip/issues)**
 
