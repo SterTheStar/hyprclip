@@ -14,17 +14,6 @@ A fast, minimal clipboard history popup for **Hyprland** using GTK4, libadwaita,
 
 ---
 
-## Features
-
-- Real-time clipboard monitoring (text + images)
-- Layer-shell popup always on top
-- Centered floating window
-- Keyboard-driven (Escape to close, focus-loss auto-close)
-- Search/filter clipboard history
-- Image previews as thumbnails
-- Runs as background service, GUI opens on demand
-- Rounded corners following system theme
-
 ## Installation
 
 ### From releases
