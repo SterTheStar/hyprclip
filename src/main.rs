@@ -20,7 +20,13 @@ fn main() -> glib::ExitCode {
 
     let gui = args.iter().any(|a| a == "--gui");
 
-    if gui && HyprclipApp::show_running_instance() {
+    if gui {
+        if HyprclipApp::show_running_instance() {
+            return glib::ExitCode::SUCCESS;
+        }
+    } else if HyprclipApp::is_running() {
+        eprintln!("hyprclip is already running in the background.");
+        eprintln!("Use 'hyprclip --gui' to toggle the clipboard popup.");
         return glib::ExitCode::SUCCESS;
     }
 

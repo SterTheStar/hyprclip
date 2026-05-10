@@ -18,6 +18,7 @@ fn socket_path() -> PathBuf {
 
 pub struct HyprclipApp {
     app: adw::Application,
+    _hold: Option<gio::ApplicationHoldGuard>,
 }
 
 impl HyprclipApp {
@@ -29,31 +30,34 @@ impl HyprclipApp {
 
         let window: Rc<RefCell<Option<MainWindow>>> = Rc::new(RefCell::new(None));
         let cm: Rc<RefCell<Option<Rc<ClipboardManager>>>> = Rc::new(RefCell::new(None));
-        let show_request = Rc::new(Cell::new(gui));
+        let toggle_request = Rc::new(Cell::new(gui));
 
-        if !gui {
+        let _hold = if !gui {
             let path = socket_path();
             let _ = std::fs::remove_file(&path);
             if let Ok(listener) = UnixListener::bind(&path) {
                 listener.set_nonblocking(true).ok();
-                let sr = show_request.clone();
+                let tr = toggle_request.clone();
                 glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
                     if let Ok((mut stream, _)) = listener.accept() {
                         let mut buf = [0u8; 16];
                         if stream.read(&mut buf).is_ok() {
                             let msg = std::str::from_utf8(&buf).unwrap_or("");
-                            if msg.starts_with("show") {
-                                sr.set(true);
+                            if msg.starts_with("toggle") || msg.starts_with("show") {
+                                tr.set(true);
                             }
                         }
                     }
                     glib::ControlFlow::Continue
                 });
             }
-        }
+            Some(app.hold())
+        } else {
+            None
+        };
 
         {
-            let show_request = show_request.clone();
+            let toggle_request = toggle_request.clone();
             let window = window.clone();
             let cm = cm.clone();
             app.connect_activate(move |app| {
@@ -66,44 +70,57 @@ impl HyprclipApp {
 
                 let mut win = window.borrow_mut();
                 if let Some(ref w) = *win {
-                    if show_request.get() {
-                        w.show();
-                        show_request.set(false);
+                    if toggle_request.get() {
+                        if w.is_visible() {
+                            w.hide();
+                        } else {
+                            w.show();
+                        }
+                        toggle_request.set(false);
                     }
                     return;
                 }
 
                 let w = MainWindow::new(app, clipboard_manager);
-                if show_request.get() {
+                if toggle_request.get() {
                     w.show();
-                    show_request.set(false);
+                    toggle_request.set(false);
                 }
                 *win = Some(w);
             });
         }
 
         {
-            let sr = show_request.clone();
+            let tr = toggle_request.clone();
             let window = window.clone();
             glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
-                if sr.get() {
+                if tr.get() {
                     if let Some(ref w) = *window.borrow() {
-                        w.show();
-                        sr.set(false);
+                        if w.is_visible() {
+                            w.hide();
+                        } else {
+                            w.show();
+                        }
+                        tr.set(false);
                     }
                 }
                 glib::ControlFlow::Continue
             });
         }
 
-        Self { app }
+        Self { app, _hold }
+    }
+
+    pub fn is_running() -> bool {
+        let path = socket_path();
+        UnixStream::connect(&path).is_ok()
     }
 
     pub fn show_running_instance() -> bool {
         let path = socket_path();
         if let Ok(mut stream) = UnixStream::connect(&path) {
             use std::io::Write;
-            let _ = stream.write_all(b"show");
+            let _ = stream.write_all(b"toggle");
             return true;
         }
         false

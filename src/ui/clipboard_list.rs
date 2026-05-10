@@ -116,7 +116,6 @@ impl ClipboardList {
             .wrap(true)
             .wrap_mode(gtk::pango::WrapMode::WordChar)
             .ellipsize(gtk::pango::EllipsizeMode::End)
-            .lines(2)
             .build();
         content_box.append(&content_label);
 

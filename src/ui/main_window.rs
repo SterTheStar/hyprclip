@@ -3,9 +3,8 @@ use crate::ui::clipboard_list::ClipboardList;
 use adw::prelude::*;
 use gtk::{self, glib, Overflow};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
-use std::cell::Cell;
+use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::Duration;
 
 pub struct MainWindow {
     window: adw::ApplicationWindow,
@@ -115,34 +114,136 @@ impl MainWindow {
 
         let controller = gtk::EventControllerKey::new();
         let window = self.window.clone();
+        let list_widget = self.list.widget().clone();
+        let search_entry = self.search_entry.clone();
         controller.connect_key_pressed(move |_, key, _, _| {
-            if key == gtk::gdk::Key::Escape {
-                window.set_visible(false);
+            match key {
+                gtk::gdk::Key::Escape => {
+                    window.set_visible(false);
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::Down => {
+                    let list = &list_widget;
+                    let selected = list.selected_row();
+                    let first_child = list.first_child();
+                    match selected {
+                        Some(row) => {
+                            let next = row.next_sibling();
+                            if let Some(next_row) = next {
+                                if let Ok(list_row) = next_row.downcast::<gtk::ListBoxRow>() {
+                                    list.select_row(Some(&list_row));
+                                    list_row.grab_focus();
+                                }
+                            }
+                        }
+                        None => {
+                            if let Some(first) = first_child {
+                                if let Ok(list_row) = first.downcast::<gtk::ListBoxRow>() {
+                                    list.select_row(Some(&list_row));
+                                    list_row.grab_focus();
+                                }
+                            }
+                        }
+                    }
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::Up => {
+                    let list = &list_widget;
+                    let selected = list.selected_row();
+                    if let Some(row) = selected {
+                        let prev = row.prev_sibling();
+                        if let Some(prev_row) = prev {
+                            if let Ok(list_row) = prev_row.downcast::<gtk::ListBoxRow>() {
+                                list.select_row(Some(&list_row));
+                                list_row.grab_focus();
+                            }
+                        }
+                    }
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::Return | gtk::gdk::Key::KP_Enter => {
+                    let list = &list_widget;
+                    if let Some(row) = list.selected_row() {
+                        row.activate();
+                    }
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::Tab => {
+                    search_entry.grab_focus();
+                    glib::Propagation::Stop
+                }
+                _ => glib::Propagation::Proceed,
             }
-            glib::Propagation::Proceed
         });
         self.window.add_controller(controller);
 
-        let close_timeout: Rc<Cell<Option<glib::SourceId>>> = Rc::new(Cell::new(None));
-
-        self.window.connect_is_active_notify(move |win| {
-            if !win.is_active() {
-                let timeout_ref = close_timeout.clone();
-                let w = win.clone();
-                let id = glib::timeout_add_local(Duration::from_secs(2), move || {
-                    timeout_ref.set(None);
-                    w.set_visible(false);
-                    glib::ControlFlow::Break
-                });
-                close_timeout.set(Some(id));
-            } else if let Some(id) = close_timeout.take() {
-                id.remove();
+        let list_widget = self.list.widget().clone();
+        let search_controller = gtk::EventControllerKey::new();
+        search_controller.connect_key_pressed(move |_, key, _, _| {
+            match key {
+                gtk::gdk::Key::Down => {
+                    let list = &list_widget;
+                    let selected = list.selected_row();
+                    let first_child = list.first_child();
+                    match selected {
+                        Some(row) => {
+                            let next = row.next_sibling();
+                            if let Some(next_row) = next {
+                                if let Ok(list_row) = next_row.downcast::<gtk::ListBoxRow>() {
+                                    list.select_row(Some(&list_row));
+                                    list_row.grab_focus();
+                                }
+                            }
+                        }
+                        None => {
+                            if let Some(first) = first_child {
+                                if let Ok(list_row) = first.downcast::<gtk::ListBoxRow>() {
+                                    list.select_row(Some(&list_row));
+                                    list_row.grab_focus();
+                                }
+                            }
+                        }
+                    }
+                    glib::Propagation::Stop
+                }
+                _ => glib::Propagation::Proceed,
             }
         });
+        self.search_entry.add_controller(search_controller);
+
+        let focus_controller = gtk::EventControllerFocus::new();
+        let window = self.window.clone();
+        let focus_timeout: Rc<RefCell<Option<glib::SourceId>>> = Rc::new(RefCell::new(None));
+        let focus_timeout_leave = focus_timeout.clone();
+        focus_controller.connect_leave(move |_| {
+            let window = window.clone();
+            let timeout = focus_timeout_leave.clone();
+            let source_id = glib::timeout_add_local(std::time::Duration::from_millis(1500), move || {
+                window.set_visible(false);
+                timeout.borrow_mut().take();
+                glib::ControlFlow::Break
+            });
+            *focus_timeout_leave.borrow_mut() = Some(source_id);
+        });
+        let focus_timeout_enter = focus_timeout.clone();
+        focus_controller.connect_enter(move |_| {
+            if let Some(source_id) = focus_timeout_enter.borrow_mut().take() {
+                source_id.remove();
+            }
+        });
+        self.window.add_controller(focus_controller);
     }
 
     pub fn show(&self) {
         self.window.present();
         self.search_entry.grab_focus();
+    }
+
+    pub fn hide(&self) {
+        self.window.set_visible(false);
+    }
+
+    pub fn is_visible(&self) -> bool {
+        self.window.is_visible()
     }
 }
