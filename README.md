@@ -1,6 +1,6 @@
 <div align="center">
 
-# hyprclip
+# HyprClip
 
 **A clipboard history manager for Hyprland**
 
@@ -11,12 +11,6 @@
 [![Hyprland](https://img.shields.io/badge/Hyprland-Wayland-blue.svg)](https://hyprland.org/)
 
 A fast, minimal clipboard history popup for **Hyprland** using GTK4, libadwaita, and the wlr-layer-shell protocol.
-
-<br>
-
-<img src="https://img.shields.io/badge/Arch_Linux-1793D1?style=for-the-badge&logo=arch-linux&logoColor=white" /> <img src="https://img.shields.io/badge/Debian-A81D33?style=for-the-badge&logo=debian&logoColor=white" /> <img src="https://img.shields.io/badge/Fedora-51A2DA?style=for-the-badge&logo=fedora&logoColor=white" />
-
-</div>
 
 ---
 
@@ -39,13 +33,13 @@ Download the latest package from [Releases](https://github.com/SterTheStar/hyprc
 
 ```bash
 # Debian/Ubuntu
-sudo dpkg -i hyprclip_1.0.0_amd64.deb
+sudo dpkg -i hyprclip_*_amd64.deb
 
 # Fedora
-sudo rpm -i hyprclip-1.0.0-1.x86_64.rpm
+sudo rpm -i hyprclip-*-1.x86_64.rpm
 
-# Generic
-tar -xf hyprclip-1.0.0-x86_64.tar.xz
+# Binary
+tar -xf hyprclip-*-x86_64.tar.xz
 sudo cp hyprclip /usr/bin/
 ```
 
