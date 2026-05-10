@@ -10,7 +10,7 @@
 [![GTK4](https://img.shields.io/badge/GTK4-libadwaita-blueviolet.svg)](https://gtk.org/)
 [![Hyprland](https://img.shields.io/badge/Hyprland-Wayland-blue.svg)](https://hyprland.org/)
 
-A fast, minimal clipboard history popup for **Hyprland** using GTK4, libadwaita, and the wlr-layer-shell protocol.\
+A fast, minimal clipboard history popup for **Hyprland** using GTK4, libadwaita, and the wlr-layer-shell protocol.
 
 </div>
 
