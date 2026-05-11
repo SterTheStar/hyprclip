@@ -76,12 +76,26 @@ impl ClipboardItem {
         &self.item_type
     }
 
-    #[allow(dead_code)]
     pub fn timestamp(&self) -> &DateTime<Local> {
         &self.timestamp
     }
 
     pub fn formatted_time(&self) -> String {
         self.timestamp.format("%H:%M:%S").to_string()
+    }
+
+    #[allow(dead_code)]
+    pub fn age_hours(&self) -> f64 {
+        let now = Local::now();
+        let duration = now.signed_duration_since(self.timestamp);
+        duration.num_seconds() as f64 / 3600.0
+    }
+
+    #[allow(dead_code)]
+    pub fn image_size_mb(&self) -> f64 {
+        self.image_bytes
+            .as_ref()
+            .map(|b| b.len() as f64 / (1024.0 * 1024.0))
+            .unwrap_or(0.0)
     }
 }

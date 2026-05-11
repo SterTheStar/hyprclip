@@ -20,13 +20,17 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 gtk4-layer-shell = "0.5"
 dirs-next = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+base64 = "0.22"
 
 [package.metadata.deb]
 maintainer = "SterTheStar <ster@hyprclip>"
 copyright = "2026, SterTheStar"
 license-file = ["LICENSE", "4"]
 extended-description = "A clipboard history manager for Hyprland with Wayland layer-shell support."
-depends = "libgtk-4-1, libadwaita-1-0, libgtk4-layer-shell-0"
+depends = "libgtk-4-1, libadwaita-1-0, libgtk4-layer-shell0"
 section = "utils"
 priority = "optional"
 assets = [

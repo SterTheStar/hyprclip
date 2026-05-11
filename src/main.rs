@@ -1,6 +1,8 @@
 mod app;
 mod clipboard;
 mod models;
+mod persistence;
+mod settings;
 mod ui;
 mod utils;
 

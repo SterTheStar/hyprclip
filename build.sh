@@ -45,7 +45,7 @@ Version: $VERSION
 Section: utils
 Priority: optional
 Architecture: $ARCH
-Depends: libgtk-4-1, libadwaita-1-0, libgtk4-layer-shell-0
+Depends: libgtk-4-1, libadwaita-1-0, libgtk4-layer-shell0
 Maintainer: SterTheStar <ster@hyprclip>
 Description: A clipboard history manager for Hyprland
  A clipboard history manager for Hyprland with Wayland layer-shell support.

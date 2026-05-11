@@ -1,4 +1,5 @@
 use crate::clipboard::ClipboardManager;
+use crate::settings::{Settings, Theme};
 use crate::ui::clipboard_list::ClipboardList;
 use adw::prelude::*;
 use gtk::{self, glib, Overflow};
@@ -10,16 +11,25 @@ pub struct MainWindow {
     window: adw::ApplicationWindow,
     list: ClipboardList,
     search_entry: gtk::SearchEntry,
+    settings: Rc<RefCell<Settings>>,
+    css_provider: gtk::CssProvider,
 }
 
 impl MainWindow {
     pub fn new(app: &adw::Application, clipboard_manager: Rc<ClipboardManager>) -> Self {
+        let settings = clipboard_manager.settings();
+        let s = settings.borrow();
+
         let window = adw::ApplicationWindow::builder()
             .application(app)
-            .default_width(900)
-            .default_height(500)
+            .default_width(s.window_width)
+            .default_height(s.window_height)
             .hide_on_close(true)
             .build();
+
+        Self::apply_theme(&s.theme);
+
+        drop(s);
 
         window.init_layer_shell();
         window.set_layer(Layer::Top);
@@ -39,7 +49,7 @@ impl MainWindow {
             }
         });
 
-        let list = ClipboardList::new(clipboard_manager);
+        let list = ClipboardList::new(clipboard_manager.clone());
 
         let search_entry = gtk::SearchEntry::builder()
             .hexpand(true)
@@ -50,28 +60,54 @@ impl MainWindow {
             .margin_end(12)
             .build();
 
+        let css_provider = gtk::CssProvider::new();
+
         let instance = Self {
             window,
             list,
             search_entry,
+            settings: settings.clone(),
+            css_provider,
         };
 
         instance.setup_ui();
-        instance.setup_signals();
+        instance.setup_signals(clipboard_manager.clone());
+        instance.setup_hot_reload(clipboard_manager);
         instance
     }
 
+    fn apply_theme(theme: &Theme) {
+        let style_manager = adw::StyleManager::default();
+        match theme {
+            Theme::System => {
+                style_manager.set_color_scheme(adw::ColorScheme::Default);
+            }
+            Theme::Light => {
+                style_manager.set_color_scheme(adw::ColorScheme::ForceLight);
+            }
+            Theme::Dark => {
+                style_manager.set_color_scheme(adw::ColorScheme::ForceDark);
+            }
+        }
+    }
+
     fn setup_ui(&self) {
-        let provider = gtk::CssProvider::new();
-        provider.load_from_string(
-            "window {
+        let font_size = self.settings.borrow().font_size;
+
+        let css = format!(
+            "window {{
                 background-color: @window_bg_color;
                 border-radius: 12px;
-            }",
+            }}
+            label {{
+                font-size: {}px;
+            }}",
+            font_size
         );
+        self.css_provider.load_from_string(&css);
         gtk::style_context_add_provider_for_display(
             &gtk::gdk::Display::default().unwrap(),
-            &provider,
+            &self.css_provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
 
@@ -100,16 +136,49 @@ impl MainWindow {
             });
     }
 
-    fn setup_signals(&self) {
+    fn setup_hot_reload(&self, clipboard_manager: Rc<ClipboardManager>) {
+        let css_provider = self.css_provider.clone();
         let window = self.window.clone();
-        let clipboard_manager = self.list.clipboard_manager();
+        let settings = self.settings.clone();
+
+        clipboard_manager.set_on_settings_change(move |new_settings| {
+            Self::apply_theme(&new_settings.theme);
+
+            let css = format!(
+                "window {{
+                    background-color: @window_bg_color;
+                    border-radius: 12px;
+                }}
+                label {{
+                    font-size: {}px;
+                }}",
+                new_settings.font_size
+            );
+            css_provider.load_from_string(&css);
+
+            window.set_default_size(new_settings.window_width, new_settings.window_height);
+
+            *settings.borrow_mut() = new_settings.clone();
+
+            tracing::info!("Applied new settings: theme={}, font_size={}, window={}x{}",
+                new_settings.theme, new_settings.font_size,
+                new_settings.window_width, new_settings.window_height);
+        });
+    }
+
+    fn setup_signals(&self, clipboard_manager: Rc<ClipboardManager>) {
+        let window = self.window.clone();
+        let settings = self.settings.clone();
+        let cm = clipboard_manager.clone();
         self.list.widget().connect_row_activated(move |_, row| {
             let index = row.index() as usize;
-            let items = clipboard_manager.get_items();
+            let items = cm.get_items();
             if let Some(item) = items.get(index) {
-                clipboard_manager.set_clipboard(item);
+                cm.set_clipboard(item);
             }
-            window.set_visible(false);
+            if settings.borrow().hide_on_select {
+                window.set_visible(false);
+            }
         });
 
         let controller = gtk::EventControllerKey::new();

@@ -145,6 +145,7 @@ impl ClipboardList {
         &self.list_box
     }
 
+    #[allow(dead_code)]
     pub fn clipboard_manager(&self) -> Rc<ClipboardManager> {
         self.clipboard_manager.clone()
     }
