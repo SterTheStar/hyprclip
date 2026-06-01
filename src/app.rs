@@ -28,8 +28,8 @@ impl HyprclipApp {
             .flags(gio::ApplicationFlags::FLAGS_NONE)
             .build();
 
+        let clipboard_manager = Rc::new(ClipboardManager::new());
         let window: Rc<RefCell<Option<MainWindow>>> = Rc::new(RefCell::new(None));
-        let cm: Rc<RefCell<Option<Rc<ClipboardManager>>>> = Rc::new(RefCell::new(None));
         let toggle_request = Rc::new(Cell::new(gui));
 
         let _hold = if !gui {
@@ -59,15 +59,8 @@ impl HyprclipApp {
         {
             let toggle_request = toggle_request.clone();
             let window = window.clone();
-            let cm = cm.clone();
+            let clipboard_manager = clipboard_manager.clone();
             app.connect_activate(move |app| {
-                let mut cm = cm.borrow_mut();
-                if cm.is_none() {
-                    *cm = Some(Rc::new(ClipboardManager::new()));
-                }
-                let clipboard_manager = cm.as_ref().unwrap().clone();
-                drop(cm);
-
                 let mut win = window.borrow_mut();
                 if let Some(ref w) = *win {
                     if toggle_request.get() {
@@ -81,7 +74,7 @@ impl HyprclipApp {
                     return;
                 }
 
-                let w = MainWindow::new(app, clipboard_manager);
+                let w = MainWindow::new(app, clipboard_manager.clone());
                 if toggle_request.get() {
                     w.show();
                     toggle_request.set(false);
